@@ -1,6 +1,7 @@
 
 const suggestions = new Map();
 
+suggestions.set("/not_found", "/404");
 suggestions.set("/tools/apint", "/tools/paint/");
 suggestions.set("/tools/piant", "/tools/paint/");
 suggestions.set("/tools/plant", "/tools/paint/");
