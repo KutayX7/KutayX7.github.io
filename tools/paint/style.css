@@ -1,0 +1,125 @@
+* {
+    --primary: #323242;
+    --primary-dark: #282832;
+    --primary-light: #445;
+    --accent: #55a;
+    --text-color: #fff;
+
+    color: var(--text-color);
+    background: var(--primary);
+    padding: 4px;
+    margin: 2px;
+    font-family: Arial, Verdana;
+}
+
+.horizontal-separator {
+    width: 100%;
+    height: 1px;
+    padding: 0;
+    margin: 4px 0;
+    background-color: var(--primary-light);
+}
+
+.vertical-separator {
+    width: 1px;
+    height: 100%;
+    padding: 0;
+    margin: 0 4px;
+    background-color: var(--primary-light);
+}
+
+#option-bar {
+    height: 42px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/*CANVAS*/
+#canvas-parent {
+    display: flex;
+}
+
+canvas {
+    padding: 0;
+    margin: auto auto;
+}
+
+/*BUTTONS*/
+button {
+    background: var(--primary-dark);
+    border: solid thin #888;
+    border-radius: 8px;
+    transition: background .1s;
+}
+
+button:hover {
+    background: var(--primary-light);
+}
+
+button:active {
+    background: var(--accent);
+}
+
+#topbar > button {
+    margin: 0;
+    padding: 8px;
+    border-radius: 0;
+    border: none;
+}
+
+#topbar > button:hover {
+    background: var(--accent);
+}
+
+/* INPUT BOXES */
+input {
+    background-color: var(--primary-dark);
+    border: none;
+    border-radius: 8px;
+    outline-width: 0;
+    height: 26px;
+    box-sizing: content-box;
+    vertical-align: middle;
+}
+
+input:focus {
+    outline: 1px solid;
+}
+
+#input-pen-color {
+    width: 26px;
+}
+
+#button-clear-canvas {
+    color: #faa;
+}
+
+#button-download-image {
+    color: #afa;
+}
+
+/* CONTEXT MENUS*/
+.context-menu-root {
+    min-width: 120px;
+    position: absolute;
+    border: 1px solid var(--primary-light);
+    display: flex;
+    flex-direction: column;
+    align-content: start;
+    align-items: stretch;
+}
+.context-menu-item {
+    margin: 0 1px;
+    padding: 6px;
+    border-radius: 4px;
+    border: none;
+    background-color: var(--primary);
+    text-align: left;
+}
+.context-menu-item:hover {
+    background: var(--primary-light);
+}
+.context-menu-item:active {
+    background: var(--accent);
+}

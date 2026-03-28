@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; connect-src 'self' https://*.peerjs.com wss://*.peerjs.com data: blob:; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;">
+    <title>Live Comments</title>
+    <script src="peer.js"></script>
+    <script src="comments.js" defer></script>
+    <link href="style.css" rel="stylesheet" type="text/css" media="all">
+  </head>
+  <body>
+    <h1>Live Comments</h1>
+    <div style="display: flex; flex-direction: column;">
+      <textarea id="comment-input"
+             placeholder="(Write your comment here)"
+             rows="4" maxlength="100"></textarea>
+      <div>
+      Private:
+      <input id="comment-private" type="checkbox">
+      </div>
+      <button id="btn-send" disabled>...</button>
+    </div>
+    <section id="comments-section">
+    </section>
+  </body>
+</html>

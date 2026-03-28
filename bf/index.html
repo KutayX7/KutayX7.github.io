@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <title>BF interpreter</title>
+    <link href="style.css" rel="stylesheet" type="text/css" media="all">
+  </head>
+  <body>
+    <h2>KutayX7's brainfuck interpreter v0.0.1</h2>
+    <p>
+      Number of memory cells: 3000 (wraps around)<br>
+      Number range: [0-255] integers (wraps around)<br>
+      Supported operators: + - &lt; &gt; [ ] , .<br>
+      EOF and after --&gt; writes 0<br>
+      Linefeed ('\n') --&gt; decimal 10<br>
+      This runs on the main thread, which means programs can freeze your browser until they halt!
+    </p>
+    <h4>Input</h4>
+    <div id="text-boxes">
+      <textarea id="source-code" placeholder="[brainfuck code]"></textarea>
+      <textarea id="input" placeholder="[program inputs]"></textarea>
+    </div>
+    <br />
+    <button id="btn-run">Run</button>
+    <h4>Output</h4>
+    <!-- TODO: Style output to look like a terminal emulator -->
+    <textarea id="output" disabled></textarea>
+    <footer></footer>
+    <script src="bf2jsCompiler.js"></script>
+    <script src="interpreter.js"></script>
+  </body>
+</html>

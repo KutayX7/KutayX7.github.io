@@ -1,0 +1,36 @@
+body {
+	background-color: #2A2022;
+}
+
+#text-boxes {
+	display: flex;
+	height: max(15em, fit-content);
+	flex-direction: row;
+	flex-flow: nowrap;
+}
+
+textarea {
+	font-family: mono;
+	height: 15em;
+	border: solid 1px;
+	flex: 1;
+	width: 100%;
+}
+
+button {
+	background-color: #30b013;
+	border: solid 1px gray;
+	height: 2em;
+	flex: 1;
+	width: 100%;
+}
+
+button:hover {
+	background-color: #1f760d;
+}
+
+* {
+	font-family: Arial;
+	color: white;
+	background-color: rgba(0,0,0,0);
+}

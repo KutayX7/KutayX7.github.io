@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <title>KutayX7's Paint Tool</title>
+    <link href="style.css" rel="stylesheet" type="text/css" media="all">
+    <link rel="icon" href="https://kutayx7.neocities.org/favicon.png" />
+  </head>
+  <body>
+    <header><a href="https://kutayx7.neocities.org/">KutayX7</a>'s Paint Tool v0.2.0</header>
+
+    <div id="topbar">
+      <button class="tab-button">File</button>
+      <button class="tab-button">Edit</button>
+      <button class="tab-button">Image</button>
+      <button class="tab-button">Effects</button>
+    </div>
+
+    <div id="option-bar">
+      Color
+      <input
+        type="color"
+        id="input-pen-color"
+        value="hsl(0 0% 0%)"
+      />
+      <div class="vertical-separator"></div>
+      Alpha
+      <input
+        type="number"
+        id="input-pen-alpha"
+        value="100"
+        min="1"
+        max="100"
+      />
+      <div class="vertical-separator"></div>
+      Size
+      <input
+        type="number"
+        id="input-pen-size"
+        value="5"
+        min="1"
+        max="100"
+      />
+    </div>
+
+    <div class="horizontal-separator"></div>
+
+    <div id="canvas-parent">
+      <canvas id="main-canvas">
+        Sorry but your web browser is not compatible.
+      </canvas>
+    </div>
+
+    <div class="horizontal-separator"></div>
+
+    <div>
+      <button id="button-clear-canvas">Clear All</button>
+      <button id="button-undo">Undo (Ctrl+Z)</button>
+      <button id="button-download-image">Download</button>
+    </div>
+    <div>
+      Width
+      <input
+        type="number"
+        id="input-width"
+        value="1280"
+        min="1"
+        max="2048"
+      />
+      Height
+      <input
+        type="number"
+        id="input-height"
+        value="720"
+        min="1"
+        max="2048"
+      />
+    </div>
+    <b>Clear canvas to apply the new image size!</b>
+    <script src="paint.js"></script>
+  </body>
+</html>
