@@ -29,7 +29,7 @@ console.log(`Searching for "${pathname}" ...`)
 const suggestion = suggestions.get(pathname);
 
 if (suggestion) {
-    const suggestedURL = "https://kutayx7.neocities.org" + suggestion;
+    const suggestedURL = "https://KutayX7.github.io" + suggestion;
     console.log(`Found a matching page: "${suggestedURL}"`);
 
     const p = document.querySelector("p");
