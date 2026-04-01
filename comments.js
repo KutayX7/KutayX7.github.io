@@ -239,12 +239,13 @@ urlInput.addEventListener('input', () => {
 sendButton.addEventListener("click", () => {
 	if (dataConnection && dataConnection.open) {
 		let url = check_url_validity(urlInput.value) ? new URL(urlInput.value) : null;
+		let href = url ? url.href : null;
 
 		dataConnection.send({
 			command: "SEND",
 			text: inputBox.value,
 			is_private: privateCheckbox.checked,
-			embed_URL: url.href,
+			embed_URL: href,
 		});
 		sendButton.textContent =  "...";
 		sendButton.disabled =  true;
