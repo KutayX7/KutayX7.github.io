@@ -8,44 +8,78 @@ const history = new Array();
 const client = new Peer();
 
 let dataConnection = null;
+let retry_time_seconds = 5;
 
-client.on('open', (id) => {
-	console.log(`connected to the peerserver. id: ${id}`);
+// This is for comment server verification.
+let publicKey = null;
+window.crypto.subtle.importKey(
+	'jwk',
+	{
+		"key_ops": [
+			"verify"
+		],
+		"ext": true,
+		"alg": "PS256",
+		"kty": "RSA",
+		"n": "iyt1tFKxHtjcs9zDwHu-OmMCKgjCa0De-k4kaj1iAsFfxjda1ExRvjiCxqu5HYCq4JcMbJBzqTlVvtpSYe5IULRu9_oBRF9cKa666uV5kW9IZz3GuOo1a9EIygl_XGIu35j3PaTBhkJRRx7Y7RZOhLE9iz0eLOSS_w4TDZjH2NPoFkGQqoFCaFd136AHccSWIDD-m9xmHD0QGqCgiiHyCfhE6IU3eo1Vqt125_ZV0BRarTCPKXeknuJYNdWqVzrMV5MTpOqDyqDepCpoD2hASh1qvleESAiHnoa2oewWZPY3VtyXXiNfU93zAa1Llb2oL161w3oxmHi2JDEhWJqjIQ",
+		"e": "AQAB"
+	},
+	{
+		name: 'RSA-PSS',
+		hash: {
+			name: 'SHA-256'
+		}
+	},
+	true,
+	['verify']
+).then((key) => {
+	publicKey = key;
+});
+
+function connect_to_comment_server() {
+	if (dataConnection && dataConnection.open) return;
 
 	sendButton.textContent = "Connecting...";
+	sendButton.disabled =  true;
 
 	dataConnection = client.connect("kutayx7-comments-1", {
 		serialization: 'json',
 		reliable: true
 	});
 
-	dataConnection.on('error', (err) => {
-		console.log(err);
-		sendButton.textContent = "error";
-		sendButton.disabled =  true;
-	});
-
 	dataConnection.on('open', () => {
 		console.log("connected to the comment server");
-
-		sendButton.textContent = "Send Comment";
-		sendButton.disabled =  false;
-
+		sendButton.textContent = "Verifying...";
+		sendButton.disabled =  true;
+		retry_time_seconds = 5;
 		dataConnection.send({command: 'LOAD'});
+
+		setTimeout(() => {
+			if (sendButton.textContent == "Verifying...") {
+				console.log("verification took too long.");
+				sendButton.textContent = "Verification timeout. The server might've been compromised. Please try again later.";
+				sendButton.disabled =  true;
+			}
+		}, 3500);
+	});
+
+	dataConnection.on('error', (err) => {
+		console.log(`DataConnection error: ${err.type} ${err}`);
+		sendButton.disabled =  true;
 	});
 
 	dataConnection.on('close', () => {
 		console.log("disconnected from the comment server");
-
-		sendButton.textContent = "Connection lost.";
+		sendButton.textContent = `Connection lost. Retrying in ${retry_time_seconds} seconds...`;
 		sendButton.disabled =  true;
+		reconnect_later(retry_time_seconds);
 	});
 
 	dataConnection.on("data", (data) => {
 		console.log(data);
 		if (data.type == "comments") {
 			history.length = 0;
-			commentsSection.innerHTML = "";
+			commentsSection.replaceChildren();
 			for (const message of data.messages) {
 				history.push(message);
 				const p = document.createElement("p");
@@ -61,29 +95,127 @@ client.on('open', (id) => {
 			p.style.marginBottom = "2px";
 			p.style.marginTop = "2px";
 			p.textContent = data.message.text;
+			if (data.style) {
+				for (const [key, value] of Object.entries(data.style)) {
+					p.style[key] = value;
+				}
+			}
 			commentsSection.after(p);
 		}
+		if (data.type == "verification") {
+			console.log("verification data received");
+			const signature_binary_string = atob(data.signature);
+			const signature_length = signature_binary_string.length;
+			const signature_bytes = new Uint8Array(signature_length);
+			for (let i = 0; i < signature_length; i++) {
+				signature_bytes[i] = signature_binary_string.charCodeAt(i);
+			}
+
+			const encoder = new TextEncoder();
+			const encoded_id = encoder.encode(client.id+"+").buffer;
+			crypto.subtle.verify(
+				{
+					name: 'RSA-PSS',
+					saltLength: 32
+				},
+				publicKey,
+				signature_bytes.buffer,
+				encoded_id
+			).then((verified) => {
+				if (verified) {
+					console.log("the comment server PASSED the verification");
+					sendButton.textContent = "Send Comment";
+					sendButton.disabled =  false;
+				} else {
+					console.log("the comment server FAILED the verification");
+					sendButton.textContent = "Verification failed. Server seems to have been compromised. Please check again later.";
+					sendButton.disabled =  true;
+				}
+			}).catch((err) => {
+				console.log(err);
+				sendButton.textContent = "Verification failed. The server might have been compromised. Please try again later.";
+				sendButton.disabled =  true;
+			});
+			client.disconnect();
+		}
 	});
+}
+
+function reconnect_later(seconds) {
+	seconds = Math.max(seconds, 5);
+	setTimeout(() => {
+		if (client.disconnected) {
+			client.reconnect();
+			reconnect_later(5);
+		}
+		else {
+			if ((!dataConnection) || !(dataConnection.open)) {
+				connect_to_comment_server();
+			}
+		}
+	}, seconds * 1000);
+}
+
+client.on('open', (id) => {
+	console.log(`connected to the peerserver. id: ${id}`);
+	connect_to_comment_server();
 });
 
 client.on('close', () => {
+	console.log("Peer (client) object has been destroyed.");
+});
+
+client.on('disconnected', () => {
 	console.log("disconnected from the peerserver");
-	dataConnection = null;
 });
 
 client.on('error', (err) => {
-	console.log(err);
-	sendButton.textContent = "Connection failed.";
+	console.log(`Peer error: ${err.type} ${err}`);
 	sendButton.disabled = true;
+	sendButton.textContent = "";
+
+	switch (err.type) {
+		case 'browser-incompatible':
+			sendButton.textContent = "Incompatible browser."; break;
+		case 'disconnected': // You've already disconnected this peer from the server and can no longer make any new connections on it.
+			sendButton.textContent = "Please let KutayX7 know if you ever see this."; break;
+		case 'peer-unavailable': // The peer you're trying to connect to does not exist.
+			reconnect_later(retry_time_seconds);
+			retry_time_seconds *= 2;
+			sendButton.textContent = `Service unavailable. Please check here again later. Retrying in ${retry_time_seconds} seconds...`;
+			break;
+		case 'ssl-unavailable': // (fatal) PeerJS is being used securely, but the cloud server does not support SSL. Use a custom PeerServer.
+			sendButton.textContent = "SSL error. Please try again later."; break;
+		case 'network': // Lost or cannot establish a connection to the signalling server.
+			reconnect_later(retry_time_seconds);
+			retry_time_seconds *= 2;
+			sendButton.textContent = `Network error. Retrying in ${retry_time_seconds} seconds...`;
+			break;
+		case 'server-error': // (fatal) Unable to reach the server.
+			sendButton.textContent = "Can't connect. Please try again later."; break;
+		case 'socket-error': // (fatal) An error from the underlying socket.
+		case 'socket-closed': // (fatal) The underlying socket closed unexpectedly.
+			sendButton.textContent = "Socket error. Please Refresh the page."; break;
+		default:
+			sendButton.textContent = "Some unexpected error. Please refresh the page.";
+	}
 });
 
 sendButton.addEventListener("click", () => {
-	if (dataConnection) {
+	if (dataConnection && dataConnection.open) {
 		dataConnection.send({
 			command: "SEND",
 			text: inputBox.value,
 			is_private: privateCheckbox.checked
 		});
-		inputBox.value = "";
+		sendButton.textContent =  "...";
+		sendButton.disabled =  true;
+
+		setTimeout(() => {
+			if (sendButton.textContent == "...") {
+				sendButton.textContent =  "Send Comment";
+				sendButton.disabled =  false;
+			}
+		}, 5000);
 	}
 })

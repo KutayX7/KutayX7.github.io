@@ -12,14 +12,20 @@
     <h1>Live Comments</h1>
     <div style="display: flex; flex-direction: column;">
       <textarea id="comment-input"
-             placeholder="(Write your comment here)"
-             rows="4" maxlength="100"></textarea>
+          placeholder="(Write your comment here. [5, 100] characters.)"
+          rows="8" cols="100"
+          maxlength="100"></textarea>
       <div>
       Private:
       <input id="comment-private" type="checkbox">
       </div>
       <button id="btn-send" disabled>...</button>
     </div>
+    <h4>
+      V V V
+      (All comments here are anonymous and nobody endorses them. Don't take anything seriously.)
+      V V V
+    </h4>
     <section id="comments-section">
     </section>
   </body>
