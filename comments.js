@@ -2,6 +2,7 @@
 const commentsSection = document.getElementById("comments-section");
 const sendButton = document.getElementById("btn-send");
 const privateCheckbox = document.getElementById("comment-private");
+const urlInput = document.getElementById("comment-embed-url");
 const inputBox = document.getElementById("comment-input");
 
 const history = new Array();
@@ -35,6 +36,29 @@ window.crypto.subtle.importKey(
 ).then((key) => {
 	publicKey = key;
 });
+
+function display_comment(comment, style) {
+	const p = document.createElement("p");
+	p.style.marginBottom = "2px";
+	p.style.marginTop = "2px";
+	p.textContent = comment.text;
+	if (style) {
+		for (const [key, value] of Object.entries(style)) {
+			p.style[key] = value;
+		}
+	}
+	let embed_url = comment.embed_url;
+	if (embed_url) {
+		const img = document.createElement("img");
+		img.crossOrigin = 'anonymous';
+		img.loading = 'lazy';
+		img.src = embed_url;
+		img.height = 120;
+		p.append(document.createElement("br"));
+		p.append(img);
+	}
+	commentsSection.prepend(p);
+}
 
 function connect_to_comment_server() {
 	if (dataConnection && dataConnection.open) return;
@@ -122,25 +146,12 @@ function connect_to_comment_server() {
 			commentsSection.replaceChildren();
 			for (const message of data.messages) {
 				history.push(message);
-				const p = document.createElement("p");
-				p.style.marginBottom = "2px";
-				p.style.marginTop = "2px";
-				p.textContent = message.text;
-				commentsSection.after(p);
+				display_comment(message, null);
 			}
 		}
 		if (data.type == "new_comment") {
 			history.push(data.message);
-			const p = document.createElement("p");
-			p.style.marginBottom = "2px";
-			p.style.marginTop = "2px";
-			p.textContent = data.message.text;
-			if (data.style) {
-				for (const [key, value] of Object.entries(data.style)) {
-					p.style[key] = value;
-				}
-			}
-			commentsSection.after(p);
+			display_comment(data.message, data.style);
 		}
 	});
 }
@@ -205,12 +216,35 @@ client.on('error', (err) => {
 	}
 });
 
+function check_url_validity(url_string) {
+	try {
+		const url = new URL(urlInput.value);
+		if (url.protocol === 'https:' && url.href.length < 256) {
+			return true;
+		}
+	} catch (err) {};
+	return false;
+}
+
+urlInput.addEventListener('input', () => {
+	if (!urlInput.value) {
+		urlInput.style.outline = "1px solid gray";
+	} else if (check_url_validity(urlInput.value)) {
+		urlInput.style.outline = "1px solid green";
+	} else {
+		urlInput.style.outline = "1px solid red";
+	}
+});
+
 sendButton.addEventListener("click", () => {
 	if (dataConnection && dataConnection.open) {
+		let url = check_url_validity(urlInput.value) ? new URL(urlInput.value) : null;
+
 		dataConnection.send({
 			command: "SEND",
 			text: inputBox.value,
-			is_private: privateCheckbox.checked
+			is_private: privateCheckbox.checked,
+			embed_URL: url.href,
 		});
 		sendButton.textContent =  "...";
 		sendButton.disabled =  true;

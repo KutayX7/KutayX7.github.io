@@ -2,11 +2,11 @@
 <html lang="">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; connect-src 'self' https://*.peerjs.com wss://*.peerjs.com data: blob:; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;">
     <title>Live Comments</title>
     <script src="peer.js"></script>
     <script src="comments.js" defer></script>
     <link href="style.css" rel="stylesheet" type="text/css" media="all">
+    <link rel="icon" href="favicon.png" />
   </head>
   <body>
     <h1>Live Comments</h1>
@@ -16,9 +16,11 @@
           rows="8" cols="100"
           maxlength="100"></textarea>
       <div>
-      Private:
+      Mark as private (only visible to Kutay):
       <input id="comment-private" type="checkbox">
       </div>
+      <input id="comment-embed-url" placeholder="(Optional) Image URL to embed">
+      <div></div>
       <button id="btn-send" disabled>...</button>
     </div>
     <h4>
