@@ -46,13 +46,13 @@ function connect_to_comment_server() {
 		serialization: 'json',
 		reliable: true
 	});
+	dataConnection.server_verified = false;
 
 	dataConnection.on('open', () => {
 		console.log("connected to the comment server");
 		sendButton.textContent = "Verifying...";
 		sendButton.disabled =  true;
 		retry_time_seconds = 5;
-		dataConnection.send({command: 'LOAD'});
 
 		setTimeout(() => {
 			if (sendButton.textContent == "Verifying...") {
@@ -76,7 +76,47 @@ function connect_to_comment_server() {
 	});
 
 	dataConnection.on("data", (data) => {
-		console.log(data);
+		if (!dataConnection.server_verified) {
+			if (data.type == "verification") {
+				console.log("verification data received");
+				const signature_binary_string = atob(data.signature);
+				const signature_length = signature_binary_string.length;
+				const signature_bytes = new Uint8Array(signature_length);
+				for (let i = 0; i < signature_length; i++) {
+					signature_bytes[i] = signature_binary_string.charCodeAt(i);
+				}
+
+				const encoder = new TextEncoder();
+				const encoded_id = encoder.encode(client.id+"+").buffer;
+				crypto.subtle.verify(
+					{
+						name: 'RSA-PSS',
+						saltLength: 32
+					},
+					publicKey,
+					signature_bytes.buffer,
+					encoded_id
+				).then((verified) => {
+					if (verified) {
+						console.log("the comment server PASSED the verification");
+						dataConnection.send({command: 'LOAD'});
+						sendButton.textContent = "Send Comment";
+						sendButton.disabled =  false;
+						dataConnection.server_verified = true;
+					} else {
+						console.log("the comment server FAILED the verification");
+						sendButton.textContent = "Verification failed. Server seems to have been compromised. Please check again later.";
+						sendButton.disabled =  true;
+					}
+				}).catch((err) => {
+					console.log(err);
+					sendButton.textContent = "Verification failed. The server might have been compromised. Please try again later.";
+					sendButton.disabled =  true;
+				});
+				client.disconnect();
+			}
+			return;
+		}
 		if (data.type == "comments") {
 			history.length = 0;
 			commentsSection.replaceChildren();
@@ -101,42 +141,6 @@ function connect_to_comment_server() {
 				}
 			}
 			commentsSection.after(p);
-		}
-		if (data.type == "verification") {
-			console.log("verification data received");
-			const signature_binary_string = atob(data.signature);
-			const signature_length = signature_binary_string.length;
-			const signature_bytes = new Uint8Array(signature_length);
-			for (let i = 0; i < signature_length; i++) {
-				signature_bytes[i] = signature_binary_string.charCodeAt(i);
-			}
-
-			const encoder = new TextEncoder();
-			const encoded_id = encoder.encode(client.id+"+").buffer;
-			crypto.subtle.verify(
-				{
-					name: 'RSA-PSS',
-					saltLength: 32
-				},
-				publicKey,
-				signature_bytes.buffer,
-				encoded_id
-			).then((verified) => {
-				if (verified) {
-					console.log("the comment server PASSED the verification");
-					sendButton.textContent = "Send Comment";
-					sendButton.disabled =  false;
-				} else {
-					console.log("the comment server FAILED the verification");
-					sendButton.textContent = "Verification failed. Server seems to have been compromised. Please check again later.";
-					sendButton.disabled =  true;
-				}
-			}).catch((err) => {
-				console.log(err);
-				sendButton.textContent = "Verification failed. The server might have been compromised. Please try again later.";
-				sendButton.disabled =  true;
-			});
-			client.disconnect();
 		}
 	});
 }
