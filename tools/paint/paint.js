@@ -3,7 +3,6 @@
 const UNDO_MAX_STEPS = 256; // Good enough for almost all cases without sacrificing too much memory
 
 const canvas = document.getElementById("main-canvas");
-const context = canvas.getContext("2d");
 const clearButton = document.getElementById("button-clear-canvas");
 const undoButton = document.getElementById("button-undo");
 const downloadButton = document.getElementById("button-download-image");
@@ -12,54 +11,126 @@ const inputAlpha = document.getElementById("input-pen-alpha");
 const inputPenSize = document.getElementById("input-pen-size");
 const inputWidth = document.getElementById("input-width");
 const inputHeight = document.getElementById("input-height");
+const inputPathSmoothing = document.getElementById("input-path-smoothing");
+
 const searchParams = new URLSearchParams(document.location.search);
 const baseImageURL = searchParams.get("src");
 const contextMenus = [];
-
+const context = canvas.getContext("2d");
 
 // Variables
-let width = 1280;
-let height = 720;
+let width = 1120;
+let height = 630;
 let painting = false;
 let undoStack = [];
+let redoStack = [];
 let penColor = "#000000";
 let refBuffer = null;
 let contextMenuSubject = "";
-
+let pointerOnCanvas = false;
+let penOnly = false;
+let primaryPointerId = null;
+let pathPointsX = [];
+let pathPointsY = [];
+let pathPointsRadius = [];
+let penX = 0;
+let penY = 0;
+let penTargetIndex = 0;
+let activeTouchCount = 0;
 
 // Funtions
-function rotate90(x, y) {
-    return [-y, x];
-}
 function saveUndo() {
-    if (undoStack.push(context.getImageData(0, 0, width, height)) > (UNDO_MAX_STEPS + 1)) {
+    if (
+        undoStack.push(
+            context.getImageData(0, 0, width, height)
+        ) > UNDO_MAX_STEPS + 1
+    ) {
         undoStack.shift();
     }
+    redoStack.length = 0;
 }
-function mouseMoveHandler(e) {
 
-    let mouseDown = e.buttons & 1;
-
-    if (painting && !mouseDown) { // End of stroke
+function pointerupHandler(e) {
+    if (painting && e.pointerId == primaryPointerId) { // End of stroke
         painting = false;
+        penOnly = false;
+        primaryPointerId = null;
         saveUndo();
     }
-    else if (!painting && mouseDown) { // Start of stroke
+}
+
+function pointermoveHandler(e) {
+    e.preventDefault();
+    let penDown = e.pressure > 0;
+    let isPen = e.pointerType == 'pen';
+    let isMNouse = e.pointerType == 'mouse';
+    let penRadius = inputPenSize.value * e.pressure;
+    if (isMNouse) {
+        penRadius *= 2;
+    }
+    const rect = canvas.getBoundingClientRect();
+    if (penOnly && !isPen) return; // Ignore unrelated touch events (such as palm).
+    if (!e.isPrimary) return; // Ignore secondary touches
+    if (painting && !penDown) { // End of stroke
+        painting = false;
+        penOnly = false;
+        saveUndo();
+    }
+    else if (
+        !painting &&
+        penDown &&
+        pointerOnCanvas &&
+        activeTouchCount <= 1
+    ) { // Start of stroke
+        if (isPen) {
+            penOnly = true;
+        }
+        primaryPointerId = e.pointerId;
         refBuffer = context.getImageData(0, 0, width, height);
         painting = true;
-        context.lineWidth = inputPenSize.value || 1;
+        pathPointsX.length = 0;
+        pathPointsY.length = 0;
+        pathPointsRadius.length = 0;
+        pathPointsX[0] = e.clientX - rect.x;
+        pathPointsY[0] = e.clientY - rect.y;
+        pathPointsRadius[0] = penRadius;
         context.lineCap = "round";
         context.lineJoin= "round";
         context.strokeStyle = penColor;
+        context.fillStyle = penColor;
         context.globalAlpha = inputAlpha.value / 100;
-        context.beginPath();
-        context.moveTo(e.offsetX - e.movementX, e.offsetY - e.movementY);
+        penX = pathPointsX[0];
+        penY = pathPointsY[0];
+        penTargetIndex = 0;
     }
-
     if (painting) {
-        context.putImageData(refBuffer, 0, 0);
-        context.lineTo(e.offsetX, e.offsetY);
-        context.stroke();
+        pathPointsX.push(e.clientX - rect.x);
+        pathPointsY.push(e.clientY - rect.y);
+        pathPointsRadius.push(penRadius);
+        const pointCount = pathPointsX.length;
+        const smoothingDistance = inputPathSmoothing.value || 1;
+
+        while (penTargetIndex < pointCount) {
+            let targetX = pathPointsX[penTargetIndex];
+            let targetY = pathPointsY[penTargetIndex];
+            let radius = pathPointsRadius[penTargetIndex];
+            let dirX = targetX - penX;
+            let dirY = targetY - penY;
+            let length = Math.sqrt(dirX * dirX + dirY * dirY);
+
+            if (length < smoothingDistance) {
+                penTargetIndex++;
+            }
+            context.beginPath();
+            context.arc(penX, penY, radius/2, 0, 2 * Math.PI);
+            context.stroke();
+            context.fill();
+
+            if (length > 0.01) {
+                penX = penX + dirX / length;
+                penY = penY + dirY / length;
+            }
+        }
     }
 }
 function clearCanvas() {
@@ -75,16 +146,31 @@ function clearCanvas() {
     context.save();
     undoStack = [];
     saveUndo();
+    document.body.style.paddingBottom = 100;
 }
 function undo() {
     if (undoStack.length > 1) {
-        undoStack.pop();
+        redoStack.push(undoStack.pop());
+        context.putImageData(undoStack[undoStack.length - 1], 0, 0);
+    }
+}
+function redo() {
+    if (redoStack.length > 0) {
+        undoStack.push(redoStack.pop());
         context.putImageData(undoStack[undoStack.length - 1], 0, 0);
     }
 }
 function keyDownHandler(e) {
-    if (e.ctrlKey && e.keyCode == 90) {
-        undo();
+    if (e.ctrlKey && e.key.toLowerCase() == 'z') {
+        if (e.shiftKey) {
+            redo();
+        } else {
+            undo();
+        }
+
+    }
+    if (e.ctrlKey && e.key.toLowerCase() == 'y') {
+        redo();
     }
 }
 function loadImageFromURL(url) {
@@ -152,8 +238,22 @@ function onTabButtonSelected(innerText, x, y) {
 }
 
 // Add event listeners
-canvas.addEventListener("mousemove", mouseMoveHandler);
-clearButton.addEventListener("click", clearCanvas);
+canvas.addEventListener("pointerenter", () => {
+    pointerOnCanvas = true;
+});
+canvas.addEventListener("pointerleave", () => {
+    pointerOnCanvas = false;
+});
+document.body.addEventListener("pointermove", pointermoveHandler, { passive: false });
+document.body.addEventListener("pointerup", pointerupHandler);
+document.body.addEventListener("pointercancel", pointerupHandler);
+window.addEventListener('keydown', keyDownHandler);
+
+clearButton.addEventListener("click", () => {
+    if (window.confirm("Are you sure that you want to clear the canvas? This can't be undone.")) {
+        clearCanvas();
+    }
+});
 undoButton.addEventListener("click", undo);
 downloadButton.addEventListener("click", (e) => {
     let url = canvas.toDataURL("image/png");
@@ -168,7 +268,6 @@ downloadButton.addEventListener("click", (e) => {
 inputPenColor.addEventListener("input", (e) => {
     penColor = e.target.value;
 });
-window.addEventListener('keydown', keyDownHandler);
 document.querySelectorAll(".tab-button").forEach((elem) => {
     elem.addEventListener("click", (e) => {
         const rect = elem.getBoundingClientRect();
@@ -176,8 +275,19 @@ document.querySelectorAll(".tab-button").forEach((elem) => {
     });
 })
 
+canvas.addEventListener('touchstart', function(e) {
+    activeTouchCount = e.targetTouches.length;
+    if (activeTouchCount == 2) {
+        undo();
+    }
+    if (activeTouchCount == 3) {
+        redo(redo()); // i'm not sure why but I don't care :)
+    }
+});
+
 
 // Initialize stuff
+canvas.style.touchAction = 'none';
 inputPenSize.value = 5;
 inputPenColor.value = penColor;
 inputAlpha.value = 100;

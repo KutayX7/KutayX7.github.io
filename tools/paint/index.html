@@ -6,9 +6,9 @@
     <link href="style.css" rel="stylesheet" type="text/css" media="all">
   </head>
   <body>
-    <header>KutayX7's Paint Tool v0.2.0</header>
+    <header>KutayX7's Paint Tool v0.3.0</header>
 
-    <div id="topbar">
+    <div id="topbar" hidden>
       <button class="tab-button">File</button>
       <button class="tab-button">Edit</button>
       <button class="tab-button">Image</button>
@@ -36,6 +36,15 @@
       <input
         type="number"
         id="input-pen-size"
+        value="5"
+        min="1"
+        max="100"
+      />
+      <div class="vertical-separator"></div>
+      Smoothing
+      <input
+        type="number"
+        id="input-path-smoothing"
         value="5"
         min="1"
         max="100"
@@ -76,6 +85,24 @@
       />
     </div>
     <b>Clear canvas to apply the new image size!</b>
+    <br><br>
+    <div class="horizontal-separator"></div>
+    <br>
+    <h3>Changelog<h3>
+    <h4>v0.3.0<h4>
+    <ul>
+      <li>Added basic stylus support.</li>
+      <li>Added redo (Crtl+Y or tap with 3 fingers).</li>
+      <li>Added undo gesture (tap with 2 fingers).</li>
+      <li>Added the smoothing (stabilizer) option.</li>
+      <li>Changed how lines are drawn.</li>
+      <li>Changed default resolution to 1120x630 (from 1280x720).</li>
+      <li>Hided the unused UI.</li>
+    </ul>
+
+    <p>You can suggest new features on the <a href="https://github.com/KutayX7/KutayX7.github.io/issues">issue tracker</a> or on the <a href="https://kutayx7.github.io/comments">comments</a>!</p>
+    <div class="end-padding"></div>
+
     <script src="paint.js"></script>
   </body>
 </html>

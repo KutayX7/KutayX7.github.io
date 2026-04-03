@@ -123,3 +123,11 @@ input:focus {
 .context-menu-item:active {
     background: var(--accent);
 }
+
+.end-padding {
+    width: 100%;
+    height: 200% + 200px;
+    padding: 50px;
+    margin: 50px;
+    background: none;
+}
