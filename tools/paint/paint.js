@@ -353,9 +353,10 @@ function loadImageFromURL(url) {
         inputWidth.value = image.width;
         inputHeight.value = image.height;
         clearCanvas();
-        context.drawImage(image, 0, 0);
-        saveUndo();
-        undoStack.shift();
+        const ctx = getContext(0)
+        ctx.drawImage(image, 0, 0);
+        saveUndo(0);
+        layerBaseData[0] = ctx.getImageData(0, 0, width, height);
         console.log("Image loaded successfully!");
     };
 
