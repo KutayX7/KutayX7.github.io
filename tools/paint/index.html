@@ -2,69 +2,67 @@
 <html lang="">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>KutayX7's Paint Tool</title>
     <link href="style.css" rel="stylesheet" type="text/css" media="all">
   </head>
   <body>
-    <header>KutayX7's Paint Tool v0.3.0</header>
+    <div id="top-bar" class="sticky">
+      <header>KutayX7's Paint Tool v0.4</header>
+      <div id="option-bar">
+        <div class="margin-auto"></div>
+        Color
+        <input
+          type="color"
+          id="input-pen-color"
+          value="hsl(0 0% 0%)"
+        />
+        <div class="vertical-separator"></div>
+        Alpha
+        <input
+          type="number"
+          id="input-pen-alpha"
+          value="100"
+          min="1"
+          max="100"
+        />
+        <div class="vertical-separator"></div>
+        Size
+        <input
+          type="number"
+          id="input-pen-size"
+          value="5"
+          min="1"
+          max="100"
+        />
+        <div class="vertical-separator"></div>
+        Smoothing
+        <input
+          type="number"
+          id="input-path-smoothing"
+          value="5"
+          min="1"
+          max="100"
+        />
+        <div class="margin-auto"></div>
+      </div>
+      <div class="horizontal-line"></div>
+    </div>
+    <div class="horizontal-line"></div>
 
-    <div id="topbar" hidden>
-      <button class="tab-button">File</button>
-      <button class="tab-button">Edit</button>
-      <button class="tab-button">Image</button>
-      <button class="tab-button">Effects</button>
+    <div id="canvas-parent" draggable="false">
     </div>
 
-    <div id="option-bar">
-      Color
-      <input
-        type="color"
-        id="input-pen-color"
-        value="hsl(0 0% 0%)"
-      />
-      <div class="vertical-separator"></div>
-      Alpha
-      <input
-        type="number"
-        id="input-pen-alpha"
-        value="100"
-        min="1"
-        max="100"
-      />
-      <div class="vertical-separator"></div>
-      Size
-      <input
-        type="number"
-        id="input-pen-size"
-        value="5"
-        min="1"
-        max="100"
-      />
-      <div class="vertical-separator"></div>
-      Smoothing
-      <input
-        type="number"
-        id="input-path-smoothing"
-        value="5"
-        min="1"
-        max="100"
-      />
-    </div>
+    <div class="horizontal-line"></div>
 
-    <div class="horizontal-separator"></div>
-
-    <div id="canvas-parent">
-      <canvas id="main-canvas">
-        Sorry but your web browser is not compatible.
-      </canvas>
-    </div>
-
-    <div class="horizontal-separator"></div>
-
-    <div>
-      <button id="button-clear-canvas">Clear All</button>
-      <button id="button-undo">Undo (Ctrl+Z)</button>
-      <button id="button-download-image">Download</button>
+    <div style="display: flex;">
+      <button id="button-clear-canvas" title="Clears and reset the canvas">Clear All</button>
+      <div class="margin-auto"></div>
+      <button id="button-undo" title="Undo the last stroke (Ctrl+Z)">Undo</button>
+      <button id="button-redo" title="Undo the last undo operation (Ctrl+Y)">Redo</button>
+      <button id="button-reset-view" title="Reset panning/zoom (Ctrl+0)">Reset view</button>
+      <div class="margin-auto"></div>
+      <button id="button-download-image" title="Download the image to your computer">Save as</button>
     </div>
     <div>
       Width
@@ -89,7 +87,22 @@
     <div class="horizontal-separator"></div>
     <br>
     <h3>Changelog<h3>
-    <h4>v0.3.0<h4>
+    <h4>v0.4<h4>
+    <ul>
+      <li>Added zoom and panning. (mouse only, for now)</li>
+      <li>Added "Reset view" buttton. (shortcut Ctrl+0)</li>
+      <li>Added a redo button.</li>
+      <li>Added a "Are you sure?" prompt when leaving/refreshing the page.</li>
+      <li>You can now change the pen size with the mouse wheel.</li>
+      <li>You can now zoom in/out with the mouse wheel while holding down Ctrl.</li>
+      <li>New images are now properly scaled to the screen.</li>
+      <li>More consistent layout across devices.</li>
+      <li>"Clear All" button no longer asks for comfirmation if nothing has been drawn.</li>
+      <li>Various input related bug fixes.</li>
+      <li>Removed unused UI elements and logic.</li>
+      <li>Made some progress towards multiple layers (WIP).</li>
+    </ul>
+    <h4>v0.3<h4>
     <ul>
       <li>Added basic stylus support.</li>
       <li>Added redo (Crtl+Y or tap with 3 fingers).</li>
@@ -97,10 +110,10 @@
       <li>Added the smoothing (stabilizer) option.</li>
       <li>Changed how lines are drawn.</li>
       <li>Changed default resolution to 1120x630 (from 1280x720).</li>
-      <li>Hided the unused UI.</li>
+      <li>Hide the unused UI.</li>
     </ul>
-
-    <p>You can suggest new features on the <a href="https://github.com/KutayX7/KutayX7.github.io/issues">issue tracker</a> or on the <a href="https://kutayx7.github.io/comments">comments</a>!</p>
+    <div class="horizontal-separator"></div>
+    <p>You can suggest new features on the <a href="https://github.com/KutayX7/KutayX7.github.io/issues">issue tracker</a> or in the <a href="https://kutayx7.github.io/comments">comments</a>!</p>
     <div class="end-padding"></div>
 
     <script src="paint.js"></script>

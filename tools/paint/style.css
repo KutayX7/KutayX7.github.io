@@ -10,47 +10,93 @@
     padding: 4px;
     margin: 2px;
     font-family: Arial, Verdana;
+    flex-wrap: wrap;
+}
+
+div, html, body {
+    padding: 0px;
+    margin: 0px;
+}
+
+html, body {
+    min-width: 100vw;
+    max-width: 100vw;
+    width: 100vw;
+    overflow-x: clip;
 }
 
 .horizontal-separator {
     width: 100%;
     height: 1px;
     padding: 0;
-    margin: 4px 0;
+    margin: 0px 0 6px 0;
+    background-color: var(--primary-light);
+}
+
+.horizontal-line {
+    width: 100%;
+    height: 1px;
+    padding: 0;
+    margin: 0;
     background-color: var(--primary-light);
 }
 
 .vertical-separator {
-    width: 1px;
+    width: 2px;
     height: 100%;
     padding: 0;
-    margin: 0 4px;
-    background-color: var(--primary-light);
+    margin: 0 6px;
+}
+
+.sticky {
+    position: sticky;
+    top: 0;
+}
+
+.margin-auto {
+    margin: auto auto;
+    padding: 0;
+}
+
+#top-bar {
+    z-index: 1;
+    height: fit-content;
+    position: sticky;
+    top: 0px;
 }
 
 #option-bar {
-    height: 42px;
+    width: 100vw;
     display: flex;
     flex-direction: row;
     align-items: center;
 }
 
-/*CANVAS*/
 #canvas-parent {
-    display: flex;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: #223;
+    max-width: 100vw;
+    max-height: 80vh;
+    width: 100vw;
+    height: 75vh;
 }
 
 canvas {
     padding: 0;
     margin: auto auto;
+    overflow: hidden;
 }
 
-/*BUTTONS*/
 button {
     background: var(--primary-dark);
     border: solid thin #888;
     border-radius: 8px;
     transition: background .1s;
+    padding: 0.5em;
 }
 
 button:hover {
@@ -78,7 +124,8 @@ input {
     border: none;
     border-radius: 8px;
     outline-width: 0;
-    height: 26px;
+    min-height: 26px;
+    min-width: 4em;
     box-sizing: content-box;
     vertical-align: middle;
 }
@@ -102,6 +149,7 @@ input:focus {
 /* CONTEXT MENUS*/
 .context-menu-root {
     min-width: 120px;
+    max-width: 100%;
     position: absolute;
     border: 1px solid var(--primary-light);
     display: flex;
@@ -126,7 +174,7 @@ input:focus {
 
 .end-padding {
     width: 100%;
-    height: 200% + 200px;
+    height: 50vh;
     padding: 50px;
     margin: 50px;
     background: none;
