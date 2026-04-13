@@ -8,8 +8,8 @@
   </head>
   <body>
     <div id="top-bar" class="sticky">
-      <header>KutayX7's Paint Tool v0.4.1</header>
-      <div id="option-bar">
+      <header class="unselectable">KutayX7's Paint Tool v0.4.2</header>
+      <div id="option-bar" class="unselectable">
         <div class="margin-auto"></div>
         Color
         <input
@@ -56,15 +56,16 @@
     <div class="horizontal-line"></div>
 
     <div style="display: flex;">
-      <button id="button-clear-canvas" title="Clears and reset the canvas">Clear All</button>
+      <button id="button-clear-canvas" title="Clear and reset the canvas. Also applies the new image size.">Clear</button>
       <div class="margin-auto"></div>
       <button id="button-undo" title="Undo the last stroke (Ctrl+Z)">Undo</button>
       <button id="button-redo" title="Undo the last undo operation (Ctrl+Y)">Redo</button>
       <button id="button-reset-view" title="Reset panning/zoom (Ctrl+0)">Reset view</button>
       <div class="margin-auto"></div>
+      <button id="button-fullscreen" title="Toggle fullscreen mode (F11)">Fullscreen</button>
       <button id="button-download-image" title="Download the image to your computer">Save as</button>
     </div>
-    <div>
+    <div class="unselectable">
       Width
       <input
         type="number"
@@ -81,12 +82,17 @@
         min="1"
         max="2048"
       />
+      - Clear canvas to apply the new image size!
     </div>
-    <b>Clear canvas to apply the new image size!</b>
-    <br><br>
+    <br>
     <div class="horizontal-separator"></div>
     <br>
-    <h3>Changelog<h3>
+    <h3 class="unselectable">Changelog<h3>
+    <h4>v0.4.2<h4>
+    <ul>
+      <li>Added a fullscreen button.</li>
+      <li>Some theme and UI tweaks.</li>
+    </ul>
     <h4>v0.4.1<h4>
     <ul>
       <li>Fix image loading from URL. (This was an undocumented feature. You can load images by appending <block>?src=ImageLink</block> to the URL in the adress bar. Image link must be URL encoded!)</li>

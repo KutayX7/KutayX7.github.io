@@ -7,6 +7,7 @@ const clearButton = document.getElementById("button-clear-canvas");
 const undoButton = document.getElementById("button-undo");
 const redoButton = document.getElementById("button-redo");
 const resetViewButton = document.getElementById("button-reset-view");
+const fullscreenButton = document.getElementById("button-fullscreen");
 const downloadButton = document.getElementById("button-download-image");
 const inputPenColor = document.getElementById("input-pen-color");
 const inputAlpha = document.getElementById("input-pen-alpha");
@@ -327,19 +328,43 @@ function redo() {
     }
 }
 
+function toggleFullscreen(nextState) {
+    if (nextState == undefined || nextState == null) {
+        nextState = !document.fullscreenElement;
+    }
+    if (nextState) {
+        document.documentElement.requestFullscreen()
+        .then(() => {})
+        .catch((err) => {});
+    } else {
+        document.exitFullscreen();
+    }
+}
+
 function keyDownHandler(e) {
     const key = e.key.toLowerCase();
     if (painting) {
 
     } else {
         if (e.ctrlKey && key == 'z') {
+            e.preventDefault();
             undo();
         }
         if (e.ctrlKey && key == 'y') {
+            e.preventDefault();
             redo();
+        }
+        if (key == 'f11') {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+        if (key == 'esc' && document.fullscreenElement) {
+            e.preventDefault();
+            toggleFullscreen(false);
         }
     }
     if (e.ctrlKey && key == '0') {
+        e.preventDefault();
         resetTransform();
     }
 }
@@ -403,6 +428,10 @@ redoButton.addEventListener('click', () => {
 
 resetViewButton.addEventListener('click', () => {
     resetTransform();
+});
+
+fullscreenButton.addEventListener('click', () => {
+    toggleFullscreen();
 })
 
 downloadButton.addEventListener("click", (e) => {
@@ -460,8 +489,6 @@ canvasesParent.addEventListener('wheel', function(e) {
             inputPenSize.value++;
         }
     }
-
-
 });
 
 // Ask the user if they are sure about leaving

@@ -1,6 +1,7 @@
 * {
     --primary: #323242;
     --primary-dark: #282832;
+    --primary-darker: #212132;
     --primary-light: #445;
     --accent: #55a;
     --text-color: #fff;
@@ -58,6 +59,13 @@ html, body {
     padding: 0;
 }
 
+.unselectable {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE 10+ and Edge */
+    user-select: none;         /* Standard syntax */
+}
+
 #top-bar {
     z-index: 1;
     height: fit-content;
@@ -78,11 +86,11 @@ html, body {
     margin: 0;
     z-index: 0;
     overflow: hidden;
-    background: #223;
+    background: var(--primary-darker);
     max-width: 100vw;
     max-height: 80vh;
     width: 100vw;
-    height: 75vh;
+    height: 80vh;
 }
 
 canvas {
@@ -93,7 +101,7 @@ canvas {
 
 button {
     background: var(--primary-dark);
-    border: solid thin #888;
+    border: solid thin var(--primary-light);
     border-radius: 8px;
     transition: background .1s;
     padding: 0.5em;
