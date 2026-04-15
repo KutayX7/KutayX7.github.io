@@ -80,7 +80,7 @@ html, body {
     align-items: center;
 }
 
-#canvas-parent {
+#paint-viewport {
     padding: 0;
     border: 0;
     margin: 0;
@@ -91,12 +91,23 @@ html, body {
     max-height: 80vh;
     width: 100vw;
     height: 80vh;
+    overflow: hidden;
+}
+
+#root-canvas {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    background: none;
+    position: relative;
 }
 
 canvas {
     padding: 0;
-    margin: auto auto;
+    margin: 0;
     overflow: hidden;
+    background: none;
+    position: absolute;
 }
 
 button {

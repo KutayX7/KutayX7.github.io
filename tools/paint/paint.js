@@ -2,7 +2,8 @@
 // Constants
 const UNDO_MAX_STEPS = 256; // Good enough for almost all cases without sacrificing too much memory
 
-const canvasesParent = document.getElementById("canvas-parent");
+const canvasesParent = document.getElementById("paint-viewport");
+const rootCanvas = document.getElementById("root-canvas"); // Not actually a canvas!
 const clearButton = document.getElementById("button-clear-canvas");
 const undoButton = document.getElementById("button-undo");
 const redoButton = document.getElementById("button-redo");
@@ -25,6 +26,7 @@ const redoStack = [];
 const pathPointsX = [];
 const pathPointsY = [];
 const pathPointsRadius = [];
+const pointerPositions = new Map();
 
 // Variables
 let width = 1120;
@@ -48,6 +50,10 @@ let translationY = 0;
 let scale = 1;
 let maxScale = 1;
 let minScale = 1;
+let rotation = 0;
+let touchGestureCooldown = false;
+let touchMinPressure = 1;
+let touchMaxPressure = 1;
 
 // Functions
 function getCanvases() {
@@ -59,7 +65,17 @@ function getCanvases() {
 }
 
 function getCanvas(layer) {
-    return getCanvases()[layer];
+    let canvases = getCanvases();
+    if (layer == -1) {
+        // Get the draw layer
+        let i = 0;
+        for (const canvas of getCanvases()) {
+            if (canvas.dataset.drawLayer == "true") {
+                return canvas;
+            }
+        }
+    }
+    return canvases.at(layer);
 }
 
 function getContext(layer) {
@@ -96,45 +112,72 @@ function endPainting(cancel) {
     painting = false;
     penOnly = false;
     primaryPointerId = null;
-    if (!cancel) {
-        saveUndo();
+    const drawCanvas = getCanvas(-1);
+    const drawCtx = getContext(-1);
+    const ctx = getContext();
+    ctx.globalAlpha = inputAlpha.value / 100;
+    ctx.drawImage(drawCanvas, 0, 0, width, height);
+    saveUndo();
+    ctx.globalAlpha = 1;
+    if (cancel) {
+        // This is not really efficient, but at least simple.
+        undo();
     }
+    drawCtx.reset();
+}
+
+function pointerdownHandler(e) {
+    pointerPositions.set(e.pointerId, {
+        clientX: e.clientX,
+        clientY: e.clientY
+    });
 }
 
 function pointerupHandler(e) {
+    pointerPositions.delete(e.pointerId);
     if (painting && e.pointerId == primaryPointerId) { // End of stroke
         endPainting();
     }
 }
 
 function translateBy(dX, dY) {
-    const baseCanvas = getCanvas(0);
     translationX += dX;
     translationY += dY;
-    baseCanvas.style.translate = `${translationX}px ${translationY}px`;
+    rootCanvas.style.translate = `${translationX}px ${translationY}px`;
 }
 
 function scaleBy(dScale, originX, originY) {
-    const baseCanvas = getCanvas(0);
     const containerRect = canvasesParent.getBoundingClientRect();
-    const canvasRect = baseCanvas.getBoundingClientRect();
+    const canvasRect = rootCanvas.getBoundingClientRect();
     const oldScale = scale;
     const newScale = Math.min(Math.max(scale * dScale, minScale), maxScale);
     scale = newScale;
     dScale = newScale/oldScale;
-    originX = originX == undefined ? (containerRect.left + containerRect.right)/2 : originX;
-    originY = originY == undefined ? (containerRect.top + containerRect.bottom)/2 : originY;
+    originX = (originX == undefined) ? (containerRect.left + containerRect.right)/2 : originX;
+    originY = (originY == undefined) ? (containerRect.top + containerRect.bottom)/2 : originY;
     let dX = (canvasRect.left + canvasRect.right)/2 - originX;
     let dY = (canvasRect.top + canvasRect.bottom)/2 - originY;
 
     translateBy(-dX, -dY);
     translateBy(dX * dScale, dY * dScale);
 
-    baseCanvas.style.scale = `${scale}`;
+    rootCanvas.style.scale = `${scale}`;
+}
+
+function rotateBy(dRadians, centerX, centerY) {
+    const rect = rootCanvas.getBoundingClientRect();
+    const [cX, cY] = getRectCenter(rect);
+    centerX = (centerX == undefined) ? (rect.left + rect.right)/2 : centerX;
+    centerY = (centerY == undefined) ? (rect.top + rect.bottom)/2 : centerY;
+    rotation += dRadians;
+    rootCanvas.style.rotate = `${rotation}rad`;
+    let [centerX2, centerY2] = rotateVec(centerX - cX, centerY - cY, dRadians);
+    let offsetX = (centerX - cX) - centerX2;
+    let offsetY = (centerY - cY) - centerY2;
+    translateBy(offsetX, offsetY);
 }
 
 function resetTransform() {
-    const baseCanvas = getCanvas(0);
     const rect = canvasesParent.getBoundingClientRect();
     const maxHeight = rect.height;
     const maxWidth = rect.width;
@@ -143,8 +186,62 @@ function resetTransform() {
     scale = Math.min(maxWidth/width, maxHeight/height) * 0.95;
     minScale = scale * 0.25;
     maxScale = scale * Math.max(width, height) / 16;
-    baseCanvas.style.translate = `${translationX}px ${translationY}px`;
-    baseCanvas.style.scale = `${scale}`;
+    rotation = 0;
+    rootCanvas.style.translate = `${translationX}px ${translationY}px`;
+    rootCanvas.style.scale = `${scale}`;
+    rootCanvas.style.rotate = `${rotation}rad`;
+}
+
+function euclideanLength(x, y) {
+    return Math.sqrt(x*x + y*y);
+}
+
+function normalize(x, y) {
+    const length = euclideanLength(x, y);
+    return [
+        x/length,
+        y/length
+    ]
+}
+
+function getDirectionVec(toX, toY, fromX, fromY) {
+    return normalize(
+        toX - fromX,
+        toY - fromY
+    );
+}
+
+function dotProduct(x1, y1, x2, y2) {
+    return x1 * x2 + y1 * y2;
+}
+
+function getRectCenter(rect) {
+    return [
+        (rect.right + rect.left) / 2,
+        (rect.bottom + rect.top) / 2
+    ]
+}
+
+function rotateVec(x, y, radians) {
+    return [
+        x * Math.cos(radians) - y * Math.sin(radians),
+        x * Math.sin(radians) + y * Math.cos(radians)
+    ]
+}
+
+function toCanvasSpace(x, y, canvas) {
+    canvas = canvas || getCanvas(selectedLayer);
+    const rect = canvas.getBoundingClientRect();
+    const [centerX, centerY] = getRectCenter(rect);
+    let [offsetX, offsetY] = rotateVec(x - centerX, y - centerY, -rotation);
+    return [
+        (offsetX/scale + width/2),
+        (offsetY/scale + height/2),
+    ];
+}
+
+function calcAngularDifference(toX, toY, fromX, fromY) {
+    return Math.atan2(toX, toY) - Math.atan2(fromX, fromY);
 }
 
 function pointermoveHandler(e) {
@@ -153,36 +250,92 @@ function pointermoveHandler(e) {
     const isPen = e.pointerType == 'pen';
     const isMouse = e.pointerType == 'mouse';
     const isTouch = e.pointerType == 'touch';
-    const canvas = getCanvas(selectedLayer);
-    const ctx = getContext(selectedLayer);
+    const canvas = getCanvas(-1);
+    const ctx = getContext(-1);
     const primaryButtonDown = e.buttons % 2 == 1;
+    const prevPosition = pointerPositions.get(e.pointerId) || {
+        clientX: e.clientX,
+        clientY: e.clientY
+    };
     let penRadius = inputPenSize.value * e.pressure;
+    let dragFactor = 1;
+    let dX = e.clientX - prevPosition.clientX;
+    let dY = e.clientY - prevPosition.clientY;
+
+    pointerPositions.set(e.pointerId, {
+        clientX: e.clientX,
+        clientY: e.clientY
+    });
 
     if (isMouse) {
-        penRadius *= 2;
+        penRadius *= 2; // pressure is either 0 or 0.5 for most mice so we normalize it
     }
 
     if (isTouch) {
+        if (e.pressure > 0) {
+            if (e.pressure < touchMinPressure) {
+                touchMinPressure = e.pressure;
+            }
+            if (e.pressure > touchMaxPressure) {
+                // Yeah, some devices seem to ignore the 0-1 range.
+                // My tablet gives (1, infinity) pressure for touch input.
+                touchMaxPressure = e.pressure;
+            }
+            if (touchMaxPressure > touchMinPressure) {
+                let pressure = (e.pressure - touchMinPressure)/(touchMaxPressure - touchMinPressure);
+                pressure = Math.min(1, pressure * 2); // make it easier to draw
+                penRadius = inputPenSize.value * pressure;
+            }
+        }
+        if (Math.abs(dX) < 1 && Math.abs(dY) < 1) {
+            return; // Ignore motionless events for touch events (makes gestures more reliable)
+        }
         if (activeTouchCount == 2) {
-            // TODO: Handle panning
-            const dx = e.movementX / 2;
-            const dy = e.movementY / 2;
-            // ...
-        } else if (activeTouchCount > 1) {
-            return;
+            // Panning
+            dragging = true;
+            touchGestureCooldown = true;
+            dragFactor = 0;
+            // Zooming
+            let centerX = -e.clientX;
+            let centerY = -e.clientY;
+            for (const pos of pointerPositions.values()) {
+                centerX += pos.clientX;
+                centerY += pos.clientY;
+            }
+            centerX = centerX / (activeTouchCount - 1);
+            centerY = centerY / (activeTouchCount - 1);
+            const [dirX1, dirY1] = getDirectionVec(
+                prevPosition.clientX, prevPosition.clientY,
+                centerX, centerY
+            );
+            const [dirX2, dirY2] = getDirectionVec(
+                e.clientX, e.clientY,
+                centerX, centerY
+            );
+            const length1 = euclideanLength(
+                prevPosition.clientX - centerX,
+                prevPosition.clientY - centerY
+            );
+            const length2 = euclideanLength(
+                e.clientX - centerX,
+                e.clientY - centerY
+            );
+            const angle = calcAngularDifference(dirX1, dirY1, dirX2, dirY2);
+            if (length1 > 0) {
+                scaleBy(length2/length1, centerX, centerY);
+                rotateBy(angle, centerX, centerY);
+            }
         }
     }
 
-    const rect = canvas.getBoundingClientRect();
-    const X = (e.clientX - rect.x) / scale;
-    const Y = (e.clientY - rect.y) / scale;
+    const [X, Y] = toCanvasSpace(e.clientX, e.clientY, canvas);
 
     if (penOnly && !isPen) return; // Ignore unrelated touch events (such as palm).
-    if ((isTouch || isPen) && !e.isPrimary) return; // Ignore secondary touches
+    if (painting && !e.isPrimary) return; // Ignore secondary touches when drawing
     if (painting && !penDown) { // End of stroke
         endPainting();
     }
-    else if (
+    if (
         !painting &&
         !(isMouse && !primaryButtonDown) &&
         penDown &&
@@ -193,7 +346,6 @@ function pointermoveHandler(e) {
             penOnly = true;
         }
         primaryPointerId = e.pointerId;
-        refBuffer = ctx.getImageData(0, 0, width, height);
         painting = true;
         pathPointsX.length = 0;
         pathPointsY.length = 0;
@@ -205,7 +357,8 @@ function pointermoveHandler(e) {
         ctx.lineJoin= "round";
         ctx.strokeStyle = penColor;
         ctx.fillStyle = penColor;
-        ctx.globalAlpha = inputAlpha.value / 100;
+        ctx.globalAlpha = 1;
+        canvas.style.opacity = inputAlpha.value / 100;
         penX = X;
         penY = Y;
         penTargetIndex = 0;
@@ -228,7 +381,7 @@ function pointermoveHandler(e) {
             let radius = pathPointsRadius[penTargetIndex];
             let dirX = targetX - penX;
             let dirY = targetY - penY;
-            let length = Math.sqrt(dirX * dirX + dirY * dirY);
+            let length = euclideanLength(dirX, dirY);
 
             if (length < smoothingDistance) {
                 penTargetIndex++;
@@ -243,8 +396,13 @@ function pointermoveHandler(e) {
                 penY = penY + dirY / length;
             }
         }
-    } else if (dragging) {
-        translateBy(e.movementX, e.movementY);
+    }
+    if (dragging) {
+        if (painting) endPainting(true);
+        translateBy(dX * dragFactor, dY * dragFactor);
+    }
+    if (activeTouchCount > 1 && painting) {
+        endPainting(true);
     }
 }
 
@@ -275,10 +433,17 @@ function clearCanvas() {
         canvas.remove();
     }
 
+    rootCanvas.width = width;
+    rootCanvas.height = height;
+    rootCanvas.style.width = `${width}px`;
+    rootCanvas.style.height = `${height}px`;
+
     let baseCanvas = document.createElement('canvas');
-    baseCanvas.width = width;
-    baseCanvas.height = height;
-    canvasesParent.append(baseCanvas);
+    rootCanvas.append(baseCanvas);
+
+    let drawCanvas = document.createElement('canvas');
+    drawCanvas.dataset.drawLayer = "true";
+    rootCanvas.append(drawCanvas);
 
     for (const canvas of getCanvases()) {
         const ctx = canvas.getContext("2d");
@@ -388,6 +553,11 @@ function loadImageFromURL(url) {
     image.src = url;
 }
 
+function isSafeToClear() {
+    if (undoStack.length > 1) return false;
+    return true;
+}
+
 // Add event listeners
 canvasesParent.addEventListener("pointerenter", () => {
     pointerOnCanvas = true;
@@ -403,15 +573,16 @@ canvasesParent.addEventListener('mousedown', mousedownHandler);
 canvasesParent.addEventListener('mouseup', mouseupHandler);
 
 window.addEventListener("pointermove", pointermoveHandler);
+window.addEventListener("pointerdown", pointerdownHandler);
 window.addEventListener("pointerup", pointerupHandler);
 window.addEventListener("pointercancel", pointerupHandler);
 window.addEventListener('keydown', keyDownHandler);
 
 clearButton.addEventListener("click", () => {
     if (painting) return;
-    if (undoStack.length <= 1) {
+    if (isSafeToClear()) {
         clearCanvas();
-    } else if (window.confirm("Are you sure that you want to clear the canvas? This can't be undone.")) {
+    } else if (window.confirm("Clear the canvas? You can't undo this!")) {
         clearCanvas();
     }
 });
@@ -460,12 +631,27 @@ inputPenColor.addEventListener("input", (e) => {
 });
 
 canvasesParent.addEventListener('touchstart', function(e) {
-    activeTouchCount = e.targetTouches.length;
-    if (activeTouchCount == 2) {
-        undo();
+    activeTouchCount = e.touches.length;
+    touchGestureCooldown = false;
+});
+
+canvasesParent.addEventListener('touchend', function(e) {
+    if (!painting && !touchGestureCooldown) {
+        if (activeTouchCount == 2) {
+            touchGestureCooldown = true;
+            undo();
+        } else if (activeTouchCount == 3) {
+            touchGestureCooldown = true;
+            redo();
+        }
     }
-    if (activeTouchCount == 3) {
-        redo(redo()); // i'm not sure why but I don't care :)
+    activeTouchCount = e.touches.length;
+});
+
+canvasesParent.addEventListener('touchcancel', function(e) {
+    activeTouchCount = e.touches.length;
+    if (painting) {
+        endPainting(true);
     }
 });
 
@@ -473,15 +659,12 @@ canvasesParent.addEventListener('touchstart', function(e) {
 canvasesParent.addEventListener('wheel', function(e) {
     e.preventDefault();
     const FACTOR = 5/4;
+    const direction = (e.deltaY > 0) ? -1 : 1;
 
     if (e.ctrlKey) {
-        if (e.deltaY > 0) {
-            scaleBy(1/FACTOR, e.clientX, e.clientY);
-        } else {
-            scaleBy(FACTOR, e.clientX, e.clientY);
-        }
+        scaleBy(FACTOR ** direction, e.clientX, e.clientY);
     } else if (e.shiftKey) {
-        // TODO: Rotate canvas
+        rotateBy(direction * Math.PI/18, e.clientX, e.clientY);
     } else {
         if (e.deltaY > 0) {
             inputPenSize.value = Math.max(1, inputPenSize.value - 1);
