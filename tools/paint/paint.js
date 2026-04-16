@@ -185,7 +185,7 @@ function resetTransform() {
     translationY = (height - maxHeight) / -2;
     scale = Math.min(maxWidth/width, maxHeight/height) * 0.95;
     minScale = scale * 0.25;
-    maxScale = scale * Math.max(width, height) / 16;
+    maxScale = scale * Math.max(width, height) / 4;
     rotation = 0;
     rootCanvas.style.translate = `${translationX}px ${translationY}px`;
     rootCanvas.style.scale = `${scale}`;
@@ -370,9 +370,8 @@ function pointermoveHandler(e) {
         pathPointsRadius.push(penRadius);
         const pointCount = pathPointsX.length;
         let smoothingDistance = inputPathSmoothing.value || 1;
-        let stepLength = 1;
         if (smoothingDistance < 1) {
-            smoothingDistance = 1;
+            smoothingDistance = 0.5;
         }
 
         while (penTargetIndex < pointCount) {
@@ -383,17 +382,30 @@ function pointermoveHandler(e) {
             let dirY = targetY - penY;
             let length = euclideanLength(dirX, dirY);
 
-            if (length < smoothingDistance) {
-                penTargetIndex++;
+            if (radius > 0) {
+                ctx.beginPath();
+                ctx.arc(penX, penY, radius/2, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.fill();
+            } else { // Pixel art mode
+                ctx.fillRect(Math.floor(penX), Math.floor(penY), 1, 1);
             }
-            ctx.beginPath();
-            ctx.arc(penX, penY, radius/2, 0, 2 * Math.PI);
-            ctx.stroke();
-            ctx.fill();
-
+            if (radius < 1 && smoothingDistance < 1) {
+                // Hacky near pixel perfect precision for pixel art
+                dirX /= 16;
+                dirY /= 16;
+            }
             if (length > 0.01) {
                 penX = penX + dirX / length;
                 penY = penY + dirY / length;
+            }
+            if (length <= smoothingDistance) {
+                penTargetIndex++;
+                if (smoothingDistance < 1) {
+                    // snap if no stabilizer (mostly for pixel art)
+                    penX = targetX;
+                    penY = targetY;
+                }
             }
         }
     }
@@ -658,19 +670,16 @@ canvasesParent.addEventListener('touchcancel', function(e) {
 // Canvas zoom with mouse wheel
 canvasesParent.addEventListener('wheel', function(e) {
     e.preventDefault();
-    const FACTOR = 5/4;
     const direction = (e.deltaY > 0) ? -1 : 1;
+    const scaleStep = 5/4;
+    const rotateStep = e.ctrlKey ? Math.PI/180 : Math.PI/12;
 
-    if (e.ctrlKey) {
-        scaleBy(FACTOR ** direction, e.clientX, e.clientY);
+    if (e.ctrlKey && !e.shiftKey) {
+        scaleBy(scaleStep ** direction, e.clientX, e.clientY);
     } else if (e.shiftKey) {
-        rotateBy(direction * Math.PI/18, e.clientX, e.clientY);
+        rotateBy(direction * rotateStep, e.clientX, e.clientY);
     } else {
-        if (e.deltaY > 0) {
-            inputPenSize.value = Math.max(1, inputPenSize.value - 1);
-        } else {
-            inputPenSize.value++;
-        }
+        inputPenSize.value = Math.max(0, Number(inputPenSize.value) + direction);
     }
 });
 
