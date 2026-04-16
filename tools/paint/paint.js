@@ -287,8 +287,8 @@ function pointermoveHandler(e) {
                 penRadius = inputPenSize.value * pressure;
             }
         }
-        if (Math.abs(dX) < 1 && Math.abs(dY) < 1) {
-            return; // Ignore motionless events for touch events (makes gestures more reliable)
+        if (!(painting || dragging) && Math.abs(dX) < 2 && Math.abs(dY) < 2) {
+            return; // makes gestures more reliable
         }
         if (activeTouchCount == 2) {
             // Panning
