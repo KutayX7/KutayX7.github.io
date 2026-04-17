@@ -98,7 +98,7 @@ html, body {
     padding: 0;
     margin: 0;
     overflow: hidden;
-    background: none;
+    background: #fff;
     position: relative;
 }
 
@@ -151,6 +151,15 @@ input {
 
 input:focus {
     outline: 1px solid;
+}
+
+dialog {
+    margin: auto;
+}
+
+::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
 }
 
 #input-pen-color {

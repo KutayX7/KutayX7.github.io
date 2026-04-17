@@ -9,7 +9,7 @@
   </head>
   <body>
     <div id="top-bar" class="sticky">
-      <header class="unselectable">KutayX7's Paint Tool v0.6</header>
+      <header class="unselectable">KutayX7's Paint Tool v0.6.1</header>
       <div id="option-bar" class="unselectable">
         <div class="margin-auto"></div>
         Color
@@ -60,6 +60,9 @@
 
     <div style="display: flex;">
       <button id="button-clear-canvas" title="Clear and reset the canvas. Also applies the new image size.">Clear</button>
+      <button id="button-open-image" title="Open an image from your PC or from an URL."
+        command="show-modal" commandfor="dialog-open-image"
+      >Open</button>
       <div class="margin-auto"></div>
       <button id="button-undo" title="Undo the last stroke (Ctrl+Z)">Undo</button>
       <button id="button-redo" title="Undo the last undo operation (Ctrl+Y)">Redo</button>
@@ -91,6 +94,10 @@
     <div class="horizontal-separator"></div>
     <br>
     <h3 class="unselectable">Changelog<h3>
+    <h4>v0.6.1<h4>
+    <ul>
+      <li>Added an "Open" button that lets you open an image either from a file or from a URL.</li>
+    </ul>
     <h4>v0.6<h4>
     <ul>
       <li>Pixel art mode. (Set the size and the stabilizer to 0)</li>
@@ -149,7 +156,24 @@
     <div class="horizontal-separator"></div>
     <p>You can suggest new features on the <a href="https://github.com/KutayX7/KutayX7.github.io/issues">issue tracker</a> or in the <a href="https://kutayx7.github.io/comments">comments</a>!</p>
     <div class="end-padding"></div>
-
+    <dialog id="dialog-open-image" closedby="any">
+      <h2>Select a file</h2>
+      <input
+        id="input-image-file"
+        type="file"
+        accept="image/*"
+      />
+      <h2>or enter a URL</h2>
+      <div>
+        <input
+          id="input-image-url"
+          type="url"
+          placeholder="https://example.com/image.png"
+          style="width: 90%;"
+        />
+        <button id="button-load">Load Image</button>
+      </div>
+    </dialog>
     <script src="paint.js"></script>
   </body>
 </html>

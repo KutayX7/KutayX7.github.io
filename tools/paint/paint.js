@@ -16,6 +16,9 @@ const inputPenSize = document.getElementById("input-pen-size");
 const inputWidth = document.getElementById("input-width");
 const inputHeight = document.getElementById("input-height");
 const inputPathSmoothing = document.getElementById("input-path-smoothing");
+const inputImageFile = document.getElementById("input-image-file");
+const inputImageUrl = document.getElementById("input-image-url");
+const loadImageButton = document.getElementById("button-load");
 
 const searchParams = new URLSearchParams(document.location.search);
 const baseImageURL = searchParams.get("src");
@@ -636,6 +639,18 @@ downloadButton.addEventListener("click", (e) => {
     a.click();
     document.body.removeChild(a);
     saveCanvas.remove();
+});
+
+loadImageButton.addEventListener("click", (e) => {
+    const files = inputImageFile.files;
+    const url = inputImageUrl.value;
+    if (files.length == 1) {
+        loadImageFromURL(URL.createObjectURL(files[0]));
+    } else if (url && url != "") {
+        loadImageFromURL(url);
+    }
+    inputImageUrl.value = "";
+    inputImageFile.value = "";
 });
 
 inputPenColor.addEventListener("input", (e) => {
